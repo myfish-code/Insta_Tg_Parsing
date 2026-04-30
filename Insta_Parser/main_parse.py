@@ -10,6 +10,6 @@ async def main_process(app):
         shortcodes = await db.get_shortcodes(account_id=account['id'], max_taken=MAX_TAKEN)
         all_accounts[i]['shortcodes'] = shortcodes
 
-    #await process_scanner(all_accounts=all_accounts, max_taken=MAX_TAKEN)
+    await process_scanner(all_accounts=all_accounts, max_taken=MAX_TAKEN)
 
     await process_worker(app, LIMIT_POSTS)
