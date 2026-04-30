@@ -1,5 +1,4 @@
 import asyncio
-from pathlib import Path
 import os
 import shutil
 from instagrapi import Client
