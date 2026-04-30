@@ -8,13 +8,20 @@ from Tg_Bot.keyboards import (
     after_add_keyboard, pagination_keyboard,
     not_found_account_keyboard, change_account_keyboard,
     after_making_keyboard, back_to_home,
-    after_refactor_keyboard
+    after_refactor_keyboard,
+    refactor_phrase, add_delete_phrase
 )
 
 from database import db
 from config import PAGE_SIZE
 
 router = Router()
+
+class AddPhrase(StatesGroup):
+    waiting_for_phrase = State()
+
+class RefactorPhrase(StatesGroup):
+    waiting_for_phrase = State()
 
 class AddAccount(StatesGroup):
     waiting_for_name = State()
@@ -51,8 +58,128 @@ async def goHome(callback_query: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("no_action"))
 async def no_action_but(callback_query:types.CallbackQuery):
-
     await callback_query.answer()
+
+@router.callback_query(F.data == "my_phrase")
+async def viewPhrase(callback_query: types.CallbackQuery):
+    await callback_query.answer()
+
+    text_phrase = await db.get_phrase()
+
+    if not text_phrase:
+        text = (
+            "<b>📍 Фраза під постом</b>\n\n"
+            "⚠️ Наразі фраза <b>не встановлена</b>.\n"
+            "Бот буде надсилати пости без додаткового тексту."
+        )
+        keyboard = await add_delete_phrase()
+    else:
+        text = (
+            "<b>📍 Поточна фраза під постом:</b>\n\n"
+            f"<blockquote>{text_phrase}</blockquote>\n\n"
+            "<i>Цей текст буде автоматично додаватися до кожного вашого поста.</i>"
+        )
+        keyboard = await refactor_phrase()
+    
+    await callback_query.message.edit_text(
+        text=text,
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+
+@router.callback_query(F.data == "add_phrase")
+async def addPhraseStart(callback_query: types.CallbackQuery, state: FSMContext):
+    callback_query.answer()
+
+    await callback_query.message.edit_text(
+        "📝 <b>Встановлення фрази</b>\n\n"
+        "Надішліть фразу, яку бот буде ліпити під кожним постом.\n"
+        "Можна з посиланнями та емодзі.",
+        parse_mode="HTML"
+    )
+
+    await state.set_state(AddPhrase.waiting_for_phrase)
+
+@router.message(AddPhrase.waiting_for_phrase)
+async def addPhraseContinue(message: types.Message, state: FSMContext):
+    normal_text = message.text.strip()
+    
+    await db.add_refactor_phrase(normal_text)
+
+    text = (
+        "✅ <b>Фразу успішно збережено!</b>\n"
+        "__________________________________\n\n"
+        "<b>📍 Поточна фраза під постом:</b>\n\n"
+        f"<blockquote>{normal_text}</blockquote>\n\n"
+        "<i>Цей текст буде автоматично додаватися до кожного вашого поста.</i>"
+    )
+    
+    keyboard = await refactor_phrase()
+
+    await message.answer(
+        text=text,
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+
+    await state.clear()
+
+@router.callback_query(F.data == "refactor_phrase")
+async def refactorPhraseStart(callback_query: types.CallbackQuery, state: FSMContext):
+    callback_query.answer()
+
+    await callback_query.message.edit_text(
+        "🔄 <b>Зміна фрази під постом</b>\n\n"
+        "Надішліть новий текст прямо сюди.\n"
+        "Попередній варіант буде автоматично замінено на новий. 👇",
+        parse_mode="HTML"
+    )
+
+    await state.set_state(RefactorPhrase.waiting_for_phrase)
+
+@router.message(RefactorPhrase.waiting_for_phrase)
+async def refactorPhraseContinue(message: types.Message, state: FSMContext):
+    normal_text = message.text.strip()
+    
+    await db.add_refactor_phrase(normal_text)
+
+    text = (
+        "✅ <b>Фразу успішно змінена!</b>\n"
+        "__________________________________\n\n"
+        "<b>📍 Поточна фраза під постом:</b>\n\n"
+        f"<blockquote>{normal_text}</blockquote>\n\n"
+        "<i>Цей текст буде автоматично додаватися до кожного вашого поста.</i>"
+    )
+    
+    keyboard = await refactor_phrase()
+
+    await message.answer(
+        text=text,
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
+
+    await state.clear()
+
+@router.callback_query(F.data == "delete_phrase")
+async def deletePhrase(callback_query: types.CallbackQuery):
+    await callback_query.answer()
+
+    await db.delete_phrase()
+
+    text = (
+        "🗑️ <b>Фразу під постом видалено</b>\n\n"
+        "Тепер пости будуть надсилатися без додаткового тексту.\n"
+        "Ви можете встановити нову фразу в будь-який момент."
+    )
+
+    keyboard = await add_delete_phrase()
+
+    await callback_query.message.edit_text(
+        text=text,
+        parse_mode="HTML",
+        reply_markup=keyboard
+    )
 
 @router.callback_query(F.data == "my_accounts")
 async def accountUsage(callback_query: types.CallbackQuery):

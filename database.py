@@ -32,6 +32,30 @@ class Database():
                 CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
             """)
 
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS post_phrase (
+                    id SERIAL PRIMARY KEY,
+                    text TEXT NOT NULL
+                );
+            """)
+
+    async def get_phrase(self):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT text FROM post_phrase LIMIT 1")
+            if row:
+                return row['text'] 
+            
+            return None
+    
+    async def add_refactor_phrase(self, phrase):
+        async with self.pool.acquire() as conn:
+            await conn.execute("""DELETE FROM post_phrase""")
+            await conn.execute("""INSERT INTO post_phrase (text) VALUES ($1)""", phrase)
+    
+    async def delete_phrase(self):
+        async with self.pool.acquire() as conn:
+            await conn.execute("""DELETE FROM post_phrase""")
+
     async def get_accounts(self):
         async with self.pool.acquire() as conn:
             accounts_name = await conn.fetch("""SELECT id, name FROM accounts ORDER BY created_at DESC""")

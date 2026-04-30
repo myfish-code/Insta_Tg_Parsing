@@ -30,10 +30,16 @@ async def process_worker(app, limit):
 
     pending_posts = await db.get_pending_posts(limit=limit)
     
+    phrase = await db.get_phrase()
+
     for pending_post in pending_posts:
         shortcode = pending_post['shortcode']
         media_type = pending_post['media_type']
         caption = pending_post['caption']
+        if phrase:
+            final_caption = f"{caption}\n\n{phrase}"
+        else:
+            final_caption = caption
 
         type_link = "reels" if media_type == 2 else "p"
         full_link = f"https://www.instagram.com/{type_link}/{shortcode}/"
@@ -43,11 +49,11 @@ async def process_worker(app, limit):
         try:
             if media_type == 1:
                 file_path = await asyncio.to_thread(cl.photo_download, media_pk, folder=DOWNLOADS_FOLDER)
-                await app.send_photo(chat_id=CHANNEL_ID, photo=str(file_path), caption=caption)
+                await app.send_photo(chat_id=CHANNEL_ID, photo=str(file_path), caption=final_caption)
                 
             elif media_type == 2:
                 file_path = await asyncio.to_thread(cl.video_download, media_pk, folder=DOWNLOADS_FOLDER)
-                await app.send_video(chat_id=CHANNEL_ID, video=str(file_path), caption=caption)
+                await app.send_video(chat_id=CHANNEL_ID, video=str(file_path), caption=final_caption)
 
             elif media_type == 8:
                 media_group = []
@@ -58,7 +64,7 @@ async def process_worker(app, limit):
 
                 for i, p in enumerate(file_path):
                     p_str = str(p) 
-                    curr_cap = caption if i == 0 else "" 
+                    curr_cap = final_caption if i == 0 else "" 
 
                     p_lower = p_str.lower()
 
@@ -72,7 +78,7 @@ async def process_worker(app, limit):
                     if "MEDIA_EMPTY" in str(e):
                         media_group = [m for m in media_group if isinstance(m, InputMediaPhoto)]
                         if media_group:
-                            media_group[0].caption = caption  
+                            media_group[0].caption = final_caption
                             await app.send_media_group(chat_id=CHANNEL_ID, media=media_group)
 
             await db.update_status_post(pending_post['id'], 'completed')

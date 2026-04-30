@@ -5,12 +5,30 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 async def start_usage_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📱 Мої аккаунти", callback_data="my_accounts")],
+        [InlineKeyboardButton(text="✍️ Фраза під постом", callback_data="my_phrase")]
     ])
 
     return keyboard
 
 async def back_to_home():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="back_to_main")]
+    ])
+
+    return keyboard
+
+async def add_delete_phrase():
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Додати фразу", callback_data="add_phrase")],
+        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="back_to_main")]
+    ])
+
+    return keyboard
+
+async def refactor_phrase():
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✏️ Редагувати фразу", callback_data="refactor_phrase")],
+        [InlineKeyboardButton(text="🗑️ Видалити фразу", callback_data="delete_phrase")],
         [InlineKeyboardButton(text="🏠 Головне меню", callback_data="back_to_main")]
     ])
 

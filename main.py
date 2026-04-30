@@ -21,7 +21,7 @@ async def main():
     await app.start()
     
     chat = await app.get_chat(CHANNEL_LINK)
-    
+
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
     
@@ -31,8 +31,8 @@ async def main():
     scheduler.add_job(
         main_process, 
         "interval", 
-        minutes=2,
-        jitter=60,
+        minutes=30,
+        jitter=1800,
         id="insta_parser_job",
         next_run_time=datetime.now(),
         max_instances=1,
