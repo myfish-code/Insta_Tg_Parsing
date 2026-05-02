@@ -16,7 +16,7 @@ session_path = os.path.join(BASE_DIR, "Insta_Parser", "my_session")
 async def main():
     await db.init_pool()
     
-    app = Client(session_path, api_id=API_ID, api_hash=API_HASH)
+    app = Client(session_path, api_id=API_ID, api_hash=API_HASH, no_updates=True)
 
     await app.start()
     
