@@ -32,11 +32,12 @@ async def process_scanner(all_accounts, max_taken):
             print(f"[SCAN] Пауза {wait_time:.1f} сек. перед {account['name']}...")
             await asyncio.sleep(wait_time)
 
+            print(f"[SCAN] Работаю с аккаунтом: {account['name']}")
             user_id = await asyncio.to_thread(cl.user_id_from_username, account['name'])
+            print(f"[SCAN] Получен ID для @{account['name']}: {user_id}")
 
             await asyncio.sleep(random.uniform(2, 5))
             medias = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
-            
             medias = medias[::-1]
 
             print(f"[SCAN] Проверяю аккаунт @{account['name']} (взято {len(medias)} постов)")

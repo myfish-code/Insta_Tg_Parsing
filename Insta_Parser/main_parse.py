@@ -9,7 +9,7 @@ async def main_process(app):
     all_accounts = await db.get_accounts()
     
     for i, account in enumerate(all_accounts):
-        shortcodes = await db.get_shortcodes(account_id=account['id'], max_taken=MAX_TAKEN)
+        shortcodes = await db.get_shortcodes(account_id=account['id'])
         all_accounts[i]['shortcodes'] = shortcodes
 
     await process_scanner(all_accounts=all_accounts, max_taken=MAX_TAKEN)

@@ -62,7 +62,7 @@ class Database():
 
             return [{'id': item['id'], 'name': item['name']} for item in accounts_name]
     
-    async def get_shortcodes(self, account_id, max_taken):
+    async def get_shortcodes(self, account_id, max_taken=None):
         async with self.pool.acquire() as conn:
             shortcode = await conn.fetch(
                 "SELECT shortcode FROM posts WHERE account_id=$1 ORDER BY id DESC LIMIT $2",
