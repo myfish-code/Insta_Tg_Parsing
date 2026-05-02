@@ -1,5 +1,5 @@
 import asyncio
-
+import random
 import os
 from instagrapi import Client
 from database import db
@@ -24,9 +24,10 @@ async def process_scanner(all_accounts, max_taken):
         all_accounts[i]['new_shortcodes'] = set()
         
         try:
-
+            await asyncio.sleep(random.uniform(10, 20))
             user_id = await asyncio.to_thread(cl.user_id_from_username, account['name'])
 
+            await asyncio.sleep(random.uniform(2, 5))
             medias = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
             
             medias = medias[::-1]

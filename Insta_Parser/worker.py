@@ -1,4 +1,5 @@
 import asyncio
+import random
 import os
 import shutil
 from instagrapi import Client
@@ -82,6 +83,7 @@ async def process_worker(app, limit):
 
             await db.update_status_post(pending_post['id'], 'completed')
 
+            await asyncio.sleep(random.randint(60, 120))
         except Exception as e:
             print(f"Error worker : {e}")
             await db.update_status_post(pending_post['id'], 'error')
