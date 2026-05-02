@@ -16,21 +16,30 @@ cl.request_timeout = 20
 async def process_scanner(all_accounts, max_taken):
     if os.path.exists(SESSION_PATH):
         await asyncio.to_thread(cl.load_settings, SESSION_PATH)
+        print(f"[AUTH] Найдена сессия {SESSION_PATH}, загружаем...")
     else:
+        print(f"[AUTH] Сессия не найдена, входим по логину {LOGIN_INST}...")
         await asyncio.to_thread(cl.login, LOGIN_INST, PASSWORD_INST)
         await asyncio.to_thread(cl.dump_settings, SESSION_PATH)
+        print(f"[AUTH] Новый файл сессии сохранен.")
     
+    print("[SCAN] Начинаю обход аккаунтов...")
     for i, account in enumerate(all_accounts):
         all_accounts[i]['new_shortcodes'] = set()
         
         try:
-            await asyncio.sleep(random.uniform(10, 20))
+            wait_time = random.uniform(10, 20)
+            print(f"[SCAN] Пауза {wait_time:.1f} сек. перед {account['name']}...")
+            await asyncio.sleep(wait_time)
+
             user_id = await asyncio.to_thread(cl.user_id_from_username, account['name'])
 
             await asyncio.sleep(random.uniform(2, 5))
             medias = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
             
             medias = medias[::-1]
+
+            print(f"[SCAN] Проверяю аккаунт @{account['name']} (взято {len(medias)} постов)")
 
             for media in medias:
                 if media.code not in account['shortcodes']:
@@ -43,6 +52,9 @@ async def process_scanner(all_accounts, max_taken):
                         hashtags=hashtags,
                         status='pending'
                     )
+                    print(f"  [+] Добавлен новый пост: {media.code}")
         except Exception as e:
             print(f"Error scanning {account['name']}: {e}")
+        
+        print("[SCAN] Цикл сканирования завершен. Все аккаунты проверены.")
     

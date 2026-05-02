@@ -20,6 +20,7 @@ cl = Client()
 cl.request_timeout = 20
 
 async def process_worker(app, limit):
+    print("[WORKER] Проверка канала и авторизация...")
     await app.get_chat(CHANNEL_ID)
 
     if os.path.exists(SESSION_PATH):
@@ -30,12 +31,17 @@ async def process_worker(app, limit):
 
     pending_posts = await db.get_pending_posts(limit=limit)
     
+    print(f"[WORKER] Найдено постов в очереди: {len(pending_posts)}")
+
     phrase = await db.get_phrase()
 
     for pending_post in pending_posts:
         shortcode = pending_post['shortcode']
         media_type = pending_post['media_type']
         caption = pending_post['caption']
+
+        print(f"[WORKER] Обработка поста: {shortcode} (Type: {media_type})")
+
         if phrase:
             final_caption = f"{caption}\n\n{phrase}"
         else:
@@ -44,9 +50,10 @@ async def process_worker(app, limit):
         type_link = "reels" if media_type == 2 else "p"
         full_link = f"https://www.instagram.com/{type_link}/{shortcode}/"
 
-        media_pk = await asyncio.to_thread(cl.media_pk_from_url, full_link)
-
         try:
+            print(f"  [>] Скачивание медиа...")
+            media_pk = await asyncio.to_thread(cl.media_pk_from_url, full_link)
+
             if media_type == 1:
                 file_path = await asyncio.to_thread(cl.photo_download, media_pk, folder=DOWNLOADS_FOLDER)
                 await app.send_photo(chat_id=CHANNEL_ID, photo=str(file_path), caption=final_caption)
@@ -83,7 +90,12 @@ async def process_worker(app, limit):
 
             await db.update_status_post(pending_post['id'], 'completed')
 
-            await asyncio.sleep(random.randint(60, 120))
+            print(f"  [OK] Пост {shortcode} успешно отправлен!")
+
+            wait_time = random.randint(60, 120)
+            print(f"[WORKER] Ожидание {wait_time} сек. перед следующим постом...")
+            await asyncio.sleep(wait_time)
+
         except Exception as e:
             print(f"Error worker : {e}")
             await db.update_status_post(pending_post['id'], 'error')
@@ -92,3 +104,5 @@ async def process_worker(app, limit):
             if os.path.exists(DOWNLOADS_FOLDER):
                 shutil.rmtree(DOWNLOADS_FOLDER)
                 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
+
+        print("[WORKER] Все задачи выполнены.")
