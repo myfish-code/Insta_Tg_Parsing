@@ -31,7 +31,7 @@ async def main():
     scheduler.add_job(
         main_process, 
         "interval", 
-        minutes=30,
+        minutes=60,
         jitter=1800,
         id="insta_parser_job",
         next_run_time=datetime.now(),
