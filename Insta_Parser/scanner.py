@@ -36,13 +36,17 @@ async def process_scanner(all_accounts, max_taken):
             user_id = await asyncio.to_thread(cl.user_id_from_username, account['name'])
             print(f"[SCAN] Получен ID для @{account['name']}: {user_id}")
 
+            wait_time = random.uniform(30, 60)
+            print(f"[SCAN] Пауза {wait_time:.1f} сек.")
             await asyncio.sleep(wait_time)
             medias_feed = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
             print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
 
-            await asyncio.sleep(random.uniform(3, 7)) # Чуть увеличил паузу между разными вкладками
+            wait_time = random.uniform(30, 60)
+            print(f"[SCAN] Пауза {wait_time:.1f} сек.")
+            await asyncio.sleep(wait_time)
             medias_reels = await asyncio.to_thread(cl.user_clips, user_id=user_id, amount=max_taken)
-            print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Clips")
+            print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Reels")
 
             # Объединяем
             all_media_objects = {m.code: m for m in (medias_feed + medias_reels)}.values()
