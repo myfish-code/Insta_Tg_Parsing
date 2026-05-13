@@ -61,16 +61,25 @@ async def process_scanner(all_accounts, max_taken):
 
             for media in medias:
                 if media.code not in account['shortcodes']:
-                    hashtags = [tag for tag in media.caption_text.split() if tag.startswith("#")]
-                    await db.add_post(
-                        account_id=account['id'],
-                        shortcode=media.code,
-                        media_type=media.media_type,
-                        caption=media.caption_text,
-                        hashtags=hashtags,
-                        status='pending'
-                    )
-                    print(f"  [+] Добавлен новый пост: {media.code}")
+                    try:
+
+                        hashtags = [tag for tag in media.caption_text.split() if tag.startswith("#")]
+                    
+                        await db.add_post(
+                            account_id=account['id'],
+                            shortcode=media.code,
+                            media_type=media.media_type,
+                            caption=media.caption_text,
+                            hashtags=hashtags,
+                            status='pending'
+                        )
+                        print(f"  [+] Добавлен новый пост: {media.code}")
+                    except Exception as e:
+                        if "unique constraint" in str(e).lower():
+                            print(f"  [!] Пост {media.code} уже есть в базе (пропуск)")
+                        else:
+                            print(f"  [!] Ошибка при добавлении {media.code}: {e}")
+                        continue
         except Exception as e:
             print(f"Error scanning {account['name']}: {e}")
         
