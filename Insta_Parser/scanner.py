@@ -36,7 +36,7 @@ async def process_scanner(all_accounts, max_taken):
             user_id = await asyncio.to_thread(cl.user_id_from_username, account['name'])
             print(f"[SCAN] Получен ID для @{account['name']}: {user_id}")
 
-            await asyncio.sleep(random.uniform(2, 5))
+            await asyncio.sleep(wait_time)
             medias_feed = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
             print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
 
