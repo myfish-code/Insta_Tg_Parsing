@@ -37,10 +37,18 @@ async def process_scanner(all_accounts, max_taken):
             print(f"[SCAN] Получен ID для @{account['name']}: {user_id}")
 
             await asyncio.sleep(random.uniform(2, 5))
-            medias = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
-            medias = medias[::-1]
+            medias_feed = await asyncio.to_thread(cl.user_medias, user_id=user_id, amount=max_taken)
+            print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
 
-            print(f"[SCAN] Проверяю аккаунт @{account['name']} (взято {len(medias)} постов)")
+            await asyncio.sleep(random.uniform(3, 7)) # Чуть увеличил паузу между разными вкладками
+            medias_reels = await asyncio.to_thread(cl.user_clips, user_id=user_id, amount=max_taken)
+            print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Clips")
+
+            # Объединяем
+            all_media_objects = {m.code: m for m in (medias_feed + medias_reels)}.values()
+            medias = sorted(all_media_objects, key=lambda x: x.taken_at)
+            
+            print(f"[MERGE] @{account['name']}: после объединения всего {len(medias)} уникальных медиа")
 
             for media in medias:
                 if media.code not in account['shortcodes']:
