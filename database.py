@@ -14,6 +14,7 @@ class Database():
                 CREATE TABLE IF NOT EXISTS accounts (
                     id SERIAL PRIMARY KEY,
                     name TEXT NOT NULL UNIQUE,
+                    insta_id TEXT UNIQUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
@@ -60,7 +61,7 @@ class Database():
         async with self.pool.acquire() as conn:
             accounts_name = await conn.fetch("""SELECT id, name FROM accounts ORDER BY created_at DESC""")
 
-            return [{'id': item['id'], 'name': item['name']} for item in accounts_name]
+            return [{'id': item['id'], 'name': item['name'], 'insta_id': item['insta_id']} for item in accounts_name]
     
     async def get_shortcodes(self, account_id, max_taken=None):
         async with self.pool.acquire() as conn:
@@ -71,6 +72,18 @@ class Database():
             )
 
             return {item['shortcode'] for item in shortcode}
+
+    async def add_insta_id(self, account_id, insta_id):
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE accounts 
+                SET insta_id = $1 
+                WHERE id = $2
+                """,
+                str(insta_id),  
+                account_id
+            )
 
     async def add_post(self, account_id, shortcode, media_type=1, caption="", hashtags=[], status="pending"):
         async with self.pool.acquire() as conn:
