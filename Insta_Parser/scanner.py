@@ -28,7 +28,7 @@ async def process_scanner(all_accounts, max_taken):
         all_accounts[i]['new_shortcodes'] = set()
         
         try:
-            wait_time = random.uniform(10, 20)
+            wait_time = random.uniform(30, 60)
             print(f"[SCAN] Пауза {wait_time:.1f} сек. перед {account['name']}...")
             await asyncio.sleep(wait_time)
 
