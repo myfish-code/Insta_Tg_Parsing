@@ -59,7 +59,7 @@ class Database():
 
     async def get_accounts(self):
         async with self.pool.acquire() as conn:
-            accounts_name = await conn.fetch("""SELECT id, name FROM accounts ORDER BY created_at DESC""")
+            accounts_name = await conn.fetch("""SELECT id, name, insta_id FROM accounts ORDER BY created_at DESC""")
 
             return [{'id': item['id'], 'name': item['name'], 'insta_id': item['insta_id']} for item in accounts_name]
     
