@@ -47,7 +47,7 @@ async def process_scanner(all_accounts, max_taken):
             medias_feed = await asyncio.to_thread(cl.user_medias, user_id=str(insta_id), amount=max_taken)
             print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
 
-            wait_time = random.uniform(30, 60)
+            wait_time = random.uniform(60, 100)
             print(f"[SCAN] Пауза {wait_time:.1f} сек.")
             await asyncio.sleep(wait_time)
             medias_reels = await asyncio.to_thread(cl.user_clips, user_id=str(insta_id), amount=max_taken)
