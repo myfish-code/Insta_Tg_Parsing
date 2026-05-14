@@ -20,8 +20,9 @@ async def main_process(app):
 
         await process_scanner(all_accounts=all_accounts, max_taken=MAX_TAKEN)
 
-    wait_time = random.uniform(100, 200)
-    print(f"[SCAN] Пауза {wait_time:.1f} сек.")
-    await asyncio.sleep(wait_time)
+        wait_time = random.uniform(100, 200)
+        print(f"[SCAN] Пауза {wait_time:.1f} сек.")
+            
+        await asyncio.sleep(wait_time)
 
     await process_worker(app, LIMIT_POSTS)
