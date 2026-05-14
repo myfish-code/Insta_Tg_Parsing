@@ -101,6 +101,10 @@ class Database():
             )
             return [dict(pending_post) for pending_post in pending_posts]
 
+    async def get_pending_count(self):
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval("SELECT COUNT(*) FROM posts WHERE status = 'pending'")
+    
     async def update_status_post(self, post_id, status):
         async with self.pool.acquire() as conn:
             await conn.execute(
