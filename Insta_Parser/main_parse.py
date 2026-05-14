@@ -6,9 +6,9 @@ from Insta_Parser.scanner import process_scanner
 from Insta_Parser.worker import process_worker
 
 async def main_process(app):
-    pending_count = await db.get_pending_posts()
-    if pending_count > 0:
-        print(f"[SKIP] В очереди еще {pending_count} постов. Пропускаем сканирование, чтобы не спамить.")
+    pending_posts = await db.get_pending_posts()
+    if len(pending_posts) > 0:
+        print(f"[SKIP] В очереди еще {len(pending_posts)} постов. Пропускаем сканирование, чтобы не спамить.")
     else:
 
         all_accounts = await db.get_accounts()
