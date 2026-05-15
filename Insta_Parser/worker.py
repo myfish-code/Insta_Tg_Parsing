@@ -4,7 +4,8 @@ import os
 import shutil
 from instagrapi import Client
 from pyrogram.types import InputMediaPhoto, InputMediaVideo
-
+import subprocess
+import json
 from config import CHANNEL_ID, LOGIN_INST, PASSWORD_INST
 from database import db
 
@@ -18,6 +19,18 @@ os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 cl = Client()
 
 cl.request_timeout = 20
+
+
+async def get_video_dims(path):
+    # Команда вытаскивает только ширину и высоту в формате JSON
+    cmd = [
+        'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+        '-show_entries', 'stream=width,height', '-of', 'json', path
+    ]
+    # Запускаем в отдельном потоке, чтобы не вешать асинхронность
+    result = await asyncio.to_thread(subprocess.check_output, cmd)
+    data = json.loads(result)
+    return data['streams'][0]['width'], data['streams'][0]['height']
 
 async def process_worker(app, limit):
     print("[WORKER] Проверка канала и авторизация...")
@@ -60,7 +73,15 @@ async def process_worker(app, limit):
                 
             elif media_type == 2:
                 file_path = await asyncio.to_thread(cl.video_download, media_pk, folder=DOWNLOADS_FOLDER)
-                await app.send_video(chat_id=CHANNEL_ID, video=str(file_path), caption=final_caption)
+                width, height = await get_video_dims(file_path)
+                await app.send_video(
+                    chat_id=CHANNEL_ID,
+                    video=str(file_path),
+                    width=width,               # Явно задаем ширину
+                    height=height,             # Явно задаем высоту
+                    supports_streaming=True,    # КРИТИЧНО для iPhone!
+                    caption=final_caption
+                )
 
             elif media_type == 8:
                 media_group = []
@@ -76,7 +97,17 @@ async def process_worker(app, limit):
                     p_lower = p_str.lower()
 
                     if p_lower.endswith(('.mp4', '.mov', '.m4v')):
-                        media_group.append(InputMediaVideo(p_str, caption=curr_cap))
+                        w, h = await get_video_dims(p_str)
+
+                        media_group.append(
+                            InputMediaVideo(
+                                p_str, 
+                                caption=curr_cap,
+                                width=w,                # Явно задаем ширину
+                                height=h,               # Явно задаем высоту
+                                supports_streaming=True # Чтобы видео в альбоме открывалось плавно
+                            )
+                        )
                     else: 
                         media_group.append(InputMediaPhoto(p_str, caption=curr_cap))
                 try:
@@ -104,5 +135,6 @@ async def process_worker(app, limit):
             if os.path.exists(DOWNLOADS_FOLDER):
                 shutil.rmtree(DOWNLOADS_FOLDER)
                 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
+           
 
         print("[WORKER] Все задачи выполнены.")
