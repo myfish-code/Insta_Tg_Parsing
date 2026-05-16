@@ -18,7 +18,7 @@ os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 
 cl = Client()
 
-cl.request_timeout = 20
+cl.request_timeout = 90
 
 
 async def get_video_dims(path):
