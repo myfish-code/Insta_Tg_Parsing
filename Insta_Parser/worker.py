@@ -8,6 +8,7 @@ import subprocess
 import json
 from config import CHANNEL_ID, LOGIN_INST, PASSWORD_INST
 from database import db
+from yt_dlp import YoutubeDL
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,7 +21,24 @@ cl = Client()
 
 cl.request_timeout = 90
 
-
+def sync_download_ytdlp(url, shortcode, output_folder):
+    output_template = os.path.join(output_folder, f"{shortcode}.%(ext)s")
+    
+    ydl_opts = {
+        'outtmpl': output_template,
+        'timeout': 60,
+        'overwrites': True,
+        'quiet': True,  # Чтобы не спамить лишним логом в консоль
+    }
+    
+    with YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+        
+    expected_path = os.path.join(output_folder, f"{shortcode}.mp4")
+    if os.path.exists(expected_path):
+        return expected_path
+    raise Exception("Файл не нашелся после скачивания")
+    
 async def get_video_dims(path):
     # Команда вытаскивает только ширину и высоту в формате JSON
     cmd = [
@@ -72,14 +90,17 @@ async def process_worker(app, limit):
                 await app.send_photo(chat_id=CHANNEL_ID, photo=str(file_path), caption=final_caption)
                 
             elif media_type == 2:
-                file_path = await asyncio.to_thread(cl.video_download, media_pk, folder=DOWNLOADS_FOLDER)
+                print(f"  [>] Скачивание Reels через yt-dlp...")
+    # Вызываем библиотеку безопасно для асинхронности
+                file_path = await asyncio.to_thread(sync_download_ytdlp, full_link, shortcode, DOWNLOADS_FOLDER)
+                
                 width, height = await get_video_dims(file_path)
                 await app.send_video(
                     chat_id=CHANNEL_ID,
                     video=str(file_path),
-                    width=width,               # Явно задаем ширину
-                    height=height,             # Явно задаем высоту
-                    supports_streaming=True,    # КРИТИЧНО для iPhone!
+                    width=width,
+                    height=height,
+                    supports_streaming=True,
                     caption=final_caption
                 )
 
