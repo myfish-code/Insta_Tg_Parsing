@@ -46,10 +46,11 @@ async def process_scanner(all_accounts, max_taken):
             medias_feed = []
             try:
                 print(f"[SCAN] ID подтвержден: {insta_id}. Приступаю к получению фида и диагностике контента...")
-                medias_feed = await asyncio.to_thread(cl.user_medias, user_id=str(insta_id), amount=max_taken)
+                medias_feed = await asyncio.to_thread(cl.user_medias_v1, user_id=str(insta_id), amount=max_taken)
                 print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
             except:
-                pass
+                print(f"[POST ERROR] @{account['name']} | insta_id={insta_id}")
+                print(f"[ERROR] {e}")
             
             wait_time = random.uniform(60, 100)
             print(f"[SCAN] Пауза {wait_time:.1f} сек.")
@@ -60,7 +61,9 @@ async def process_scanner(all_accounts, max_taken):
                 medias_reels = await asyncio.to_thread(cl.user_clips, user_id=str(insta_id), amount=max_taken)
                 print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Reels")
             except:
-                pass
+                print(f"[REELS ERROR] @{account['name']} | insta_id={insta_id}")
+                print(f"[ERROR] {e}")
+
             # Объединяем
             all_media_objects = {m.code: m for m in (medias_feed + medias_reels)}.values()
             medias = sorted(all_media_objects, key=lambda x: x.taken_at)
