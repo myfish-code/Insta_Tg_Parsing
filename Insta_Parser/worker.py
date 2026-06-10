@@ -16,14 +16,15 @@ DOWNLOADS_FOLDER = os.path.join(CURRENT_DIR, "downloads")
 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 
 def sync_download_ytdlp(url, shortcode, output_folder):
-    output_template = os.path.join(output_folder, f"{shortcode}%(autonumber, -| )s.%(ext)s")
+    # Упрощаем шаблон: файлы будут называться shortcode_1.mp4, shortcode_2.jpg и т.д.
+    output_template = os.path.join(output_folder, f"{shortcode}_%(playlist_index)s.%(ext)s")
     
     ydl_opts = {
         'outtmpl': output_template,
         'timeout': 60,
         'overwrites': True,
-        'quiet': True,
-        'no_warnings': True,
+        # 'quiet': True,  # ВРЕМЕННО КОММЕНТИРУЕМ, чтобы увидеть реальную ошибку в консоли!
+        'no_warnings': False, 
     }
     
     with YoutubeDL(ydl_opts) as ydl:
