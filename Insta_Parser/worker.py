@@ -107,8 +107,29 @@ async def process_worker(app, limit):
                 print(f"  [>] Скачивание альбома через instagrapi...")
                 media_pk = await asyncio.to_thread(cl.media_pk_from_url, full_link)
                 media_group = []
-                file_path = await asyncio.to_thread(cl.album_download, media_pk, folder=DOWNLOADS_FOLDER)
+                
+                try:
+                    # Пробуем дефолтный метод
+                    file_path = await asyncio.to_thread(cl.album_download, media_pk, folder=DOWNLOADS_FOLDER)
+                except Exception as album_err:
+                    # Если вылетает 'XDTGraphImage' или любая другая дичь, включаем обходной план
+                    print(f"  [!] Дефолтный метод альбома упал ({album_err}). Включаем обходной путь через media_info...")
+                    
+                    # Получаем полную инфу о посте
+                    info = await asyncio.to_thread(cl.media_info, media_pk)
+                    file_path = []
+                    
+                    # Проходимся по каждому элементу карусели отдельно
+                    for i, item in enumerate(info.resources):
+                        # Скачиваем как одиночное фото или видео
+                        if item.media_type == 1:  # Фото
+                            res_path = await asyncio.to_thread(cl.photo_download_by_url, item.thumbnail_url, folder=DOWNLOADS_FOLDER)
+                            if res_path: file_path.append(res_path)
+                        elif item.media_type == 2:  # Видео
+                            res_path = await asyncio.to_thread(cl.video_download_by_url, item.video_url, folder=DOWNLOADS_FOLDER)
+                            if res_path: file_path.append(res_path)
 
+                # Дальше твой стандартный рабочий код отправки альбома в ТГ
                 if len(file_path) > 10:
                     file_path = file_path[:10]
 
