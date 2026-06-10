@@ -21,3 +21,5 @@ blob-report/
 
 session.json
 *.session
+
+*.txt

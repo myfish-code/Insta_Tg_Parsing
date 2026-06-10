@@ -23,7 +23,8 @@ def sync_download_ytdlp(url, shortcode, output_folder):
         'outtmpl': output_template,
         'timeout': 60,
         'overwrites': True,
-        # 'quiet': True,  # ВРЕМЕННО КОММЕНТИРУЕМ, чтобы увидеть реальную ошибку в консоли!
+        'cookiefile': os.path.join(CURRENT_DIR, "cookies.txt"),  # Подсовываем куки
+        'quiet': True,
         'no_warnings': False, 
     }
     
