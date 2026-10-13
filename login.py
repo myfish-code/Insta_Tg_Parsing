@@ -1,10 +1,12 @@
 from instagrapi import Client
 import json
+from config import PROXY_URL
 
 # Вставь сюда скопированное значение целиком
 SESSION_ID = "" 
 
 cl = Client()
+cl.set_proxy(PROXY_URL)
 
 try:
     print("Пробую войти по sessionid...")

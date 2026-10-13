@@ -6,7 +6,7 @@ from pyrogram.types import InputMediaPhoto, InputMediaVideo
 import subprocess
 import json
 from instagrapi import Client
-from config import CHANNEL_ID, LOGIN_INST, PASSWORD_INST
+from config import CHANNEL_ID, LOGIN_INST, PASSWORD_INST, PROXY_URL
 from database import db
 from yt_dlp import YoutubeDL
 import glob
@@ -18,6 +18,8 @@ SESSION_PATH = os.path.join(CURRENT_DIR, "session.json")
 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 
 cl = Client()
+cl.set_proxy(PROXY_URL)
+
 cl.request_timeout = 90
 
 def sync_download_ytdlp(url, shortcode, output_folder):

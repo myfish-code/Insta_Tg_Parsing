@@ -3,13 +3,14 @@ import random
 import os
 from instagrapi import Client
 from database import db
-from config import LOGIN_INST, PASSWORD_INST
+from config import LOGIN_INST, PASSWORD_INST, PROXY_URL
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SESSION_PATH = os.path.join(CURRENT_DIR, "session.json")
 
 cl = Client()
+cl.set_proxy(PROXY_URL)
 
 cl.request_timeout = 60
 

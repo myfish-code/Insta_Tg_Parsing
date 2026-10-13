@@ -11,6 +11,7 @@ API_HASH = os.getenv("API_HASH")
 CHANNEL_LINK = os.getenv("CHANNEL_LINK")
 LOGIN_INST = os.getenv("LOGIN_INST")
 PASSWORD_INST = os.getenv("PASSWORD_INST")
+PROXY_URL = os.getenv("PROXY_URL")
 
 PAGE_SIZE = 5
 MAX_TAKEN = 10
