@@ -14,6 +14,12 @@ cl.set_proxy(PROXY_URL)
 
 cl.request_timeout = 60
 
+anon_cl = Client()
+anon_cl.set_proxy(PROXY_URL)
+anon_cl.private.headers.update({
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+})
+
 async def process_scanner(all_accounts, max_taken):
     if os.path.exists(SESSION_PATH):
         await asyncio.to_thread(cl.load_settings, SESSION_PATH)
@@ -59,7 +65,7 @@ async def process_scanner(all_accounts, max_taken):
 
             medias_reels = []
             try:
-                medias_reels = await asyncio.to_thread(cl.user_clips_v1, user_id=str(insta_id), amount=max_taken)
+                medias_reels = await asyncio.to_thread(anon_cl.user_clips_v1, user_id=str(insta_id), amount=max_taken)
                 print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Reels")
             except Exception as e:
                 print(f"[REELS ERROR] @{account['name']} | insta_id={insta_id}")
