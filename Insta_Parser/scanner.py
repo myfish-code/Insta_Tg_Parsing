@@ -59,7 +59,7 @@ async def process_scanner(all_accounts, max_taken):
 
             medias_reels = []
             try:
-                medias_reels = await asyncio.to_thread(cl.user_clips, user_id=str(insta_id), amount=max_taken)
+                medias_reels = await asyncio.to_thread(cl.user_clips_v1, user_id=str(insta_id), amount=max_taken)
                 print(f"[REELS] @{account['name']}: получено {len(medias_reels)} роликов из вкладки Reels")
             except Exception as e:
                 print(f"[REELS ERROR] @{account['name']} | insta_id={insta_id}")
