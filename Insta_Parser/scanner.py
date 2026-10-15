@@ -9,10 +9,10 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SESSION_PATH = os.path.join(CURRENT_DIR, "session.json")
 
-cl = Client()
-cl.set_proxy(PROXY_URL)
+#cl = Client()
+#cl.set_proxy(PROXY_URL)
 
-cl.request_timeout = 60
+#cl.request_timeout = 60
 
 anon_cl = Client()
 anon_cl.set_proxy(PROXY_URL)
@@ -21,14 +21,14 @@ anon_cl.private.headers.update({
 })
 
 async def process_scanner(all_accounts, max_taken):
-    if os.path.exists(SESSION_PATH):
-        await asyncio.to_thread(cl.load_settings, SESSION_PATH)
-        print(f"[AUTH] Найдена сессия {SESSION_PATH}, загружаем...")
-    else:
-        print(f"[AUTH] Сессия не найдена, входим по логину {LOGIN_INST}...")
-        await asyncio.to_thread(cl.login, LOGIN_INST, PASSWORD_INST)
-        await asyncio.to_thread(cl.dump_settings, SESSION_PATH)
-        print(f"[AUTH] Новый файл сессии сохранен.")
+    #if os.path.exists(SESSION_PATH):
+    #    await asyncio.to_thread(cl.load_settings, SESSION_PATH)
+    #    print(f"[AUTH] Найдена сессия {SESSION_PATH}, загружаем...")
+    #else:
+    #    print(f"[AUTH] Сессия не найдена, входим по логину {LOGIN_INST}...")
+    #    await asyncio.to_thread(cl.login, LOGIN_INST, PASSWORD_INST)
+    #   await asyncio.to_thread(cl.dump_settings, SESSION_PATH)
+    #    print(f"[AUTH] Новый файл сессии сохранен.")
     
     print("[SCAN] Начинаю обход аккаунтов...")
     for i, account in enumerate(all_accounts):
@@ -42,18 +42,18 @@ async def process_scanner(all_accounts, max_taken):
 
             print(f"[SCAN] Работаю с аккаунтом: {account['name']}")
 
-            if not insta_id:
-                print(f"[SCAN] ID для {account['name']} не найден в базе, запрашиваю...")
-                insta_id= await asyncio.to_thread(cl.user_id_from_username, account['name'])
-                await db.add_insta_id(account_id=account['id'], insta_id=insta_id)
-                wait_time = random.uniform(30, 60)
-                print(f"[SCAN] Пауза {wait_time:.1f} сек.")
-                await asyncio.sleep(wait_time)
+            #if not insta_id:
+            #    print(f"[SCAN] ID для {account['name']} не найден в базе, запрашиваю...")
+            #    insta_id= await asyncio.to_thread(cl.user_id_from_username, account['name'])
+            #    await db.add_insta_id(account_id=account['id'], insta_id=insta_id)
+            #    wait_time = random.uniform(30, 60)
+            #    print(f"[SCAN] Пауза {wait_time:.1f} сек.")
+            #    await asyncio.sleep(wait_time)
             
             medias_feed = []
             try:
                 print(f"[SCAN] ID подтвержден: {insta_id}. Приступаю к получению фида и диагностике контента...")
-                medias_feed = await asyncio.to_thread(cl.user_medias, user_id=str(insta_id), amount=max_taken)
+                medias_feed = await asyncio.to_thread(anon_cl.user_medias, user_id=str(insta_id), amount=max_taken)
                 print(f"[FEED]  @{account['name']}: получено {len(medias_feed)} постов из основной ленты")
             except Exception as e:
                 print(f"[POST ERROR] @{account['name']} | insta_id={insta_id}")
