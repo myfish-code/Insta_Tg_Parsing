@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from typing import Callable, Dict, Any, Awaitable
 from config import ADMINS
 
-class BanCheckMiddleware(BaseMiddleware):
+class AdminCheckMiddleware(BaseMiddleware):
     async def __call__(
         self,
         handler: Callable[[Message | CallbackQuery, Dict[str, Any]], Awaitable[Any]],

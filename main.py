@@ -7,8 +7,12 @@ import os
 
 from config import BOT_TOKEN, API_HASH, API_ID, CHANNEL_LINK
 from database import db
+
 from Tg_Bot.handlers import router
+from Tg_Bot.middleware import AdminCheckMiddleware
+
 from Insta_Parser.main_parse import main_process
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 session_path = os.path.join(BASE_DIR, "Insta_Parser", "my_session")
@@ -25,6 +29,9 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
     
+    dp.message.middleware(AdminCheckMiddleware())
+    dp.callback_query.middleware(AdminCheckMiddleware())
+
     dp.include_router(router)
 
     scheduler = AsyncIOScheduler()
