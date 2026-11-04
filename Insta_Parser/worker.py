@@ -47,10 +47,9 @@ async def get_video_dims(path):
     return data['streams'][0]['width'], data['streams'][0]['height']
 
 async def process_worker(app, limit):
-    print("[WORKER] Проверка канала и авторизация в Instagram...")
+    print("[WORKER] Проверка канала и авторизация в Instagram...", flush=True)
     await app.get_chat(CHANNEL_ID)
 
-    # Возвращаем авторизацию instagrapi для фото и альбомов
     if os.path.exists(SESSION_PATH):
         await asyncio.to_thread(cl.load_settings, SESSION_PATH)
     else:
@@ -58,7 +57,7 @@ async def process_worker(app, limit):
         await asyncio.to_thread(cl.dump_settings, SESSION_PATH)
 
     pending_posts = await db.get_pending_posts(limit=limit)
-    print(f"[WORKER] Найдено постов в очереди: {len(pending_posts)}")
+    print(f"[WORKER] Найдено постов в очереди: {len(pending_posts)}", flush=True)
 
     phrase = await db.get_phrase()
 
@@ -67,44 +66,36 @@ async def process_worker(app, limit):
         media_type = pending_post['media_type']
         caption = pending_post['caption']
 
-        print(f"[WORKER] Обработка поста: {shortcode} (Type: {media_type})")
+        print(f"[WORKER] Обработка поста: {shortcode} (Type: {media_type})", flush=True)
 
-        if phrase:
-            final_caption = f"{caption}\n\n{phrase}"
-        else:
-            final_caption = caption
-
+        final_caption = f"{caption}\n\n{phrase}" if phrase else caption
         type_link = "reels" if media_type == 2 else "p"
         full_link = f"https://www.instagram.com/{type_link}/{shortcode}/"
 
         try:
-            # --- ТИП 1: ОДИНОЧНОЕ ФОТО (Через instagrapi) ---
+            # --- ТИП 1: ОДИНОЧНОЕ ФОТО ---
             if media_type == 1:
-                print(f"  [>] Скачивание фото через instagrapi...")
+                print(f"  [>] Скачивание фото через instagrapi...", flush=True)
                 media_pk = await asyncio.to_thread(cl.media_pk_from_url, full_link)
                 file_path = await asyncio.to_thread(cl.photo_download, media_pk, folder=DOWNLOADS_FOLDER)
                 await app.send_photo(chat_id=CHANNEL_ID, photo=str(file_path), caption=final_caption)
-                
-            # --- ТИП 2: REELS / ВИДЕО (Через yt-dlp) ---
+
+            # --- ТИП 2: REELS / ВИДЕО ---
             elif media_type == 2:
                 print(f"  [>] Запуск скачивания Reels через yt-dlp...", flush=True)
                 
-                # Чистим папку перед скачиванием, чтобы не взялся старый файл от предыдущего поста
                 if os.path.exists(DOWNLOADS_FOLDER):
                     shutil.rmtree(DOWNLOADS_FOLDER)
                 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 
-                # Скачиваем
                 await asyncio.to_thread(sync_download_ytdlp, full_link, shortcode, DOWNLOADS_FOLDER)
 
-                # Ищем скачанный файл
                 downloaded_files = sorted(glob.glob(os.path.join(DOWNLOADS_FOLDER, "*")))
                 if not downloaded_files:
                     raise Exception(f"yt-dlp не смог скачать файл для {shortcode}")
 
                 file_path = downloaded_files[0]
 
-                # Пробуем получить размеры, если ffprobe упадет — отправляем без них
                 try:
                     w, h = await get_video_dims(file_path)
                     width, height = int(w), int(h)
@@ -123,76 +114,58 @@ async def process_worker(app, limit):
 
                 await app.send_video(**send_kwargs)
 
-            # --- ТИП 8: КАРУСЕЛЬ (АЛЬБОМ) (Через instagrapi) ---
+            # --- ТИП 8: КАРУСЕЛЬ (АЛЬБОМ) ---
             elif media_type == 8:
-                print(f"  [>] Скачивание альбома через instagrapi...")
+                print(f"  [>] Скачивание альбома через instagrapi...", flush=True)
                 media_pk = await asyncio.to_thread(cl.media_pk_from_url, full_link)
-                media_group = []
                 
                 try:
-                    # Пробуем дефолтный метод
                     file_path = await asyncio.to_thread(cl.album_download, media_pk, folder=DOWNLOADS_FOLDER)
                 except Exception as album_err:
-                    # Если вылетает 'XDTGraphImage' или любая другая дичь, включаем обходной план
-                    print(f"  [!] Дефолтный метод альбома упал ({album_err}). Включаем обходной путь через media_info...")
-                    
-                    # Получаем полную инфу о посте
+                    print(f"  [!] Дефолтный метод альбома упал ({album_err}). Переходим на media_info...", flush=True)
                     info = await asyncio.to_thread(cl.media_info, media_pk)
                     file_path = []
-                    
-                    # Проходимся по каждому элементу карусели отдельно
-                    for i, item in enumerate(info.resources):
-                        # Скачиваем как одиночное фото или видео
-                        if item.media_type == 1:  # Фото
+                    for item in info.resources:
+                        if item.media_type == 1:
                             res_path = await asyncio.to_thread(cl.photo_download_by_url, item.thumbnail_url, folder=DOWNLOADS_FOLDER)
                             if res_path: file_path.append(res_path)
-                        elif item.media_type == 2:  # Видео
+                        elif item.media_type == 2:
                             res_path = await asyncio.to_thread(cl.video_download_by_url, item.video_url, folder=DOWNLOADS_FOLDER)
                             if res_path: file_path.append(res_path)
 
-                # Дальше твой стандартный рабочий код отправки альбома в ТГ
                 if len(file_path) > 10:
                     file_path = file_path[:10]
 
+                media_group = []
                 for i, p in enumerate(file_path):
                     p_str = str(p) 
                     curr_cap = final_caption if i == 0 else "" 
                     p_lower = p_str.lower()
 
                     if p_lower.endswith(('.mp4', '.mov', '.m4v')):
-                        w, h = await get_video_dims(p_str)
-                        media_group.append(
-                            InputMediaVideo(
-                                p_str, 
-                                caption=curr_cap,
-                                width=w,
-                                height=h,
-                                supports_streaming=True
-                            )
-                        )
+                        try:
+                            w, h = await get_video_dims(p_str)
+                            media_group.append(InputMediaVideo(p_str, caption=curr_cap, width=int(w), height=int(h), supports_streaming=True))
+                        except Exception:
+                            media_group.append(InputMediaVideo(p_str, caption=curr_cap, supports_streaming=True))
                     else: 
                         media_group.append(InputMediaPhoto(p_str, caption=curr_cap))
 
-                try:
+                if media_group:
                     await app.send_media_group(chat_id=CHANNEL_ID, media=media_group)
-                except Exception as e:
-                    if "MEDIA_EMPTY" in str(e):
-                        media_group = [m for m in media_group if isinstance(m, InputMediaPhoto)]
-                        if media_group:
-                            media_group[0].caption = final_caption
-                            await app.send_media_group(chat_id=CHANNEL_ID, media=media_group)
 
+            # Отмечаем статус как completed ТОЛЬКО если пост отправлен
             await db.update_status_post(pending_post['id'], 'completed')
-            print(f"  [OK] Пост {shortcode} успешно отправлен!")
+            print(f"  [OK] Пост {shortcode} успешно отправлен!", flush=True)
 
             wait_time = random.randint(60, 120)
-            print(f"[WORKER] Ожидание {wait_time} сек. перед следующим постом...")
+            print(f"[WORKER] Ожидание {wait_time} сек. перед следующим постом...", flush=True)
             await asyncio.sleep(wait_time)
 
         except Exception as e:
             import traceback
             print(f"  [!] Ошибка при обработке {shortcode}: {e}", flush=True)
-            traceback.print_exc()  # Печатает конкретную строчку, где упал код
+            traceback.print_exc()
             await db.update_status_post(pending_post['id'], 'error')
         
         finally:
@@ -200,4 +173,4 @@ async def process_worker(app, limit):
                 shutil.rmtree(DOWNLOADS_FOLDER)
                 os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
 
-    print("[WORKER] Все задачи выполнены.")
+    print("[WORKER] Все задачи выполнены.", flush=True)
