@@ -23,7 +23,7 @@ cl.set_proxy(PROXY_URL)
 cl.request_timeout = 90
 
 def sync_download_ytdlp(url, shortcode, output_folder):
-    output_template = os.path.join(output_folder, f"{shortcode}%(autonumber, -| )s.%(ext)s")
+    output_template = os.path.join(output_folder, f"{shortcode}.%(ext)s")
     
     ydl_opts = {
         'outtmpl': output_template,
@@ -31,6 +31,7 @@ def sync_download_ytdlp(url, shortcode, output_folder):
         'overwrites': True,
         'quiet': True,
         'no_warnings': True,
+        'ignoreerrors': False,  
     }
     
     with YoutubeDL(ydl_opts) as ydl:
@@ -86,23 +87,41 @@ async def process_worker(app, limit):
                 
             # --- ТИП 2: REELS / ВИДЕО (Через yt-dlp) ---
             elif media_type == 2:
-                print(f"  [>] Запуск скачивания Reels через yt-dlp...")
+                print(f"  [>] Запуск скачивания Reels через yt-dlp...", flush=True)
+                
+                # Чистим папку перед скачиванием, чтобы не взялся старый файл от предыдущего поста
+                if os.path.exists(DOWNLOADS_FOLDER):
+                    shutil.rmtree(DOWNLOADS_FOLDER)
+                os.makedirs(DOWNLOADS_FOLDER, exist_ok=True)
+
+                # Скачиваем
                 await asyncio.to_thread(sync_download_ytdlp, full_link, shortcode, DOWNLOADS_FOLDER)
 
-                downloaded_files = sorted(glob.glob(os.path.join(DOWNLOADS_FOLDER, f"{shortcode}*")))
+                # Ищем скачанный файл
+                downloaded_files = sorted(glob.glob(os.path.join(DOWNLOADS_FOLDER, "*")))
                 if not downloaded_files:
-                    raise Exception(f"yt-dlp завершился, но файлы с префиксом {shortcode} не найдены.")
-                
+                    raise Exception(f"yt-dlp не смог скачать файл для {shortcode}")
+
                 file_path = downloaded_files[0]
-                width, height = await get_video_dims(file_path)
-                await app.send_video(
-                    chat_id=CHANNEL_ID,
-                    video=str(file_path),
-                    width=width,
-                    height=height,
-                    supports_streaming=True,
-                    caption=final_caption
-                )
+
+                # Пробуем получить размеры, если ffprobe упадет — отправляем без них
+                try:
+                    w, h = await get_video_dims(file_path)
+                    width, height = int(w), int(h)
+                except Exception:
+                    width, height = None, None
+
+                send_kwargs = {
+                    "chat_id": CHANNEL_ID,
+                    "video": str(file_path),
+                    "supports_streaming": True,
+                    "caption": final_caption
+                }
+                if width and height:
+                    send_kwargs["width"] = width
+                    send_kwargs["height"] = height
+
+                await app.send_video(**send_kwargs)
 
             # --- ТИП 8: КАРУСЕЛЬ (АЛЬБОМ) (Через instagrapi) ---
             elif media_type == 8:
