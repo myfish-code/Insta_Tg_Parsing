@@ -190,7 +190,9 @@ async def process_worker(app, limit):
             await asyncio.sleep(wait_time)
 
         except Exception as e:
-            print(f"Error worker : {e}")
+            import traceback
+            print(f"  [!] Ошибка при обработке {shortcode}: {e}", flush=True)
+            traceback.print_exc()  # Печатает конкретную строчку, где упал код
             await db.update_status_post(pending_post['id'], 'error')
         
         finally:
